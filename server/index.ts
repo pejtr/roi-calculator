@@ -1,5 +1,6 @@
 import express from "express";
 import { createServer } from "http";
+import { registerLeadApi } from "./leadApi";
 import path from "path";
 import { fileURLToPath } from "url";
 
@@ -9,6 +10,10 @@ const __dirname = path.dirname(__filename);
 async function startServer() {
   const app = express();
   const server = createServer(app);
+
+  app.disable("x-powered-by");
+  app.use(express.json({ limit: "16kb" }));
+  registerLeadApi(app);
 
   // Serve static files from dist/public in production
   const staticPath =
@@ -23,7 +28,7 @@ async function startServer() {
     res.sendFile(path.join(staticPath, "index.html"));
   });
 
-  const port = process.env.PORT || 3000;
+  const port = process.env.PORT || 3001;
 
   server.listen(port, () => {
     console.log(`Server running on http://localhost:${port}/`);
