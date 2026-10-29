@@ -9,7 +9,7 @@
 - [ ] Never claim deployment without direct runtime verification
 
 ## 2026-10-29 · LEAD OS ROI revenue funnel
-- [x] Server-side consented lead relay and source attribution in feature branch
+- [x] Server-side consented lead relay and source attribution in feature branch (Node and Cloudflare Pages adapters)
 - [x] Replaced fake lead delivery and unverified social proof with transparent inquiry copy
 - [x] Public pricing cards for Creator Mini Audit / Revenue Audit Sprint (inquiry, not checkout)
 - [ ] Verify `pnpm check`, `pnpm test` and `pnpm build` in a networked checkout
