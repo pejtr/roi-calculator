@@ -50,7 +50,7 @@ The free calculator now offers **inquiry-only** paid services: Creator Mini Audi
 
 The browser posts consented inquiries to same-origin `POST /api/leads`. The Node or Cloudflare Pages server validates fields and relays to the existing LEAD OS `POST /api/leads/ingest` with `X-LEADOS-Key` using a **server-side secret**. The client reports success only when LEAD OS confirms persistence; missing configuration returns an honest error. See [integration and release gates](docs/LEADOS_ROI_INTEGRATION.md).
 
-Start locally with `pnpm dev:server` and `pnpm dev` in two shells; set server-only variables from `.env.example` in the runtime environment (not in client code). Run `pnpm check`, `pnpm test`, and `pnpm build`. The source changes **have not been production-verified**.
+Start locally with `pnpm dev:server` and `pnpm dev` in two shells; set server-only variables from `.env.example` in the runtime environment (not in client code). Run `pnpm verify:release` to execute typecheck, tests, build and an offline API smoke test against a fake LEAD OS. It does not validate production. The source changes **have not been production-verified**.
 
 ## Contributing
 
