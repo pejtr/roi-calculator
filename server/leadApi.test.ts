@@ -18,6 +18,10 @@ describe("ROI lead ingestion safety", () => {
     expect(parseLead({ ...valid, email: "not-an-email" })).toBeNull();
     expect(parseLead({ ...valid, scenario: { ...valid.scenario, engagementRate: Infinity } })).toBeNull();
     expect(parseLead({ ...valid, offer: "free-money" })).toBeNull();
+    expect(parseLead({ ...valid, pageUrl: "javascript:alert(1)" })).toBeNull();
+  });
+  it("removes URL query parameters and fragments before CRM ingestion", () => {
+    expect(parseLead({ ...valid, pageUrl: "https://example.com/creator?token=private#hello" })?.pageUrl).toBe("https://example.com/creator");
   });
   it("requires a browser origin and accepts only same-host or exact allowlisted origins", () => {
     expect(trustedOrigin(undefined, "example.com", "")).toBe(false);
