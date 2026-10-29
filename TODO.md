@@ -7,3 +7,15 @@
 - [ ] Run secret scanning before releases where CI supports it
 - [ ] Audit full git history before any major visibility/security milestone
 - [ ] Never claim deployment without direct runtime verification
+
+## 2026-10-29 · LEAD OS ROI revenue funnel
+- [x] Server-side consented lead relay and source attribution in feature branch (Node and Cloudflare Pages adapters)
+- [x] Replaced fake lead delivery and unverified social proof with transparent inquiry copy
+- [x] Public pricing cards for Creator Mini Audit / Revenue Audit Sprint (inquiry, not checkout)
+- [x] Add executable `pnpm verify:release` with offline HTTP smoke against fake LEAD OS\n- [ ] Execute `pnpm verify:release` in a networked checkout (local tool here has no npm connectivity)
+- [ ] Configure LEAD OS project API key only in private deployment environment
+- [ ] Verify end-to-end test POST appears in LEAD OS inbox
+- [ ] Configure real rate limits/bot protection before public traffic
+- [ ] Validate privacy policy and lead processing; test mobile UX and emails manually
+- [ ] Confirm checkout capability before offering immediate card payment
+- [ ] Publish verified live URL and then add OPTIMATEO.com/ONYXWEB cross-promotion

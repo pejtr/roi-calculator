@@ -9,7 +9,11 @@
     "start": "NODE_ENV=production node dist/index.js",
     "preview": "vite preview --host",
     "check": "tsc --noEmit",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "dev:server": "tsx watch server/index.ts",
+    "test": "vitest run",
+    "smoke:api": "node scripts/roi-smoke.mjs",
+    "verify:release": "pnpm check && pnpm test && pnpm build && pnpm smoke:api"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

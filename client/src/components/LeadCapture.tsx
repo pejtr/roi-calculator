@@ -1,7 +1,7 @@
 // Lead Capture Modal — Hormozi Value First approach
 // Triggered after user sees results (high intent moment)
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { X, ArrowRight, CheckCircle, Zap } from "lucide-react";
 import type { CalculatorResults } from "@/hooks/useCalculator";
 import { formatCZK } from "@/hooks/useCalculator";
@@ -10,7 +10,8 @@ interface LeadCaptureProps {
   isOpen: boolean;
   onClose: () => void;
   results: CalculatorResults | null;
-  onSubmit: (data: { name: string; email: string; biggestChallenge: string }) => void;
+  offer: "consultation" | "mini-audit" | "revenue-sprint";
+  onSubmit: (data: { name: string; email: string; biggestChallenge: string }) => Promise<void>;
 }
 
 const CHALLENGES = [
@@ -22,19 +23,36 @@ const CHALLENGES = [
   "Jiné",
 ];
 
-export default function LeadCapture({ isOpen, onClose, results, onSubmit }: LeadCaptureProps) {
-  const [step, setStep] = useState(1);
+export default function LeadCapture({ isOpen, onClose, results, onSubmit, offer }: LeadCaptureProps) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [challenge, setChallenge] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [consent, setConsent] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (isOpen) {
+      setSubmitted(false);
+      setError("");
+    }
+  }, [isOpen, offer]);
 
   if (!isOpen) return null;
 
-  const handleSubmit = () => {
-    if (!name || !email || !challenge) return;
-    onSubmit({ name, email, biggestChallenge: challenge });
-    setSubmitted(true);
+  const handleSubmit = async () => {
+    if (!name.trim() || !email.trim() || !challenge || !consent || sending) return;
+    setSending(true);
+    setError("");
+    try {
+      await onSubmit({ name: name.trim(), email: email.trim(), biggestChallenge: challenge });
+      setSubmitted(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Odeslání se nezdařilo.");
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -74,18 +92,17 @@ export default function LeadCapture({ isOpen, onClose, results, onSubmit }: Lead
               Hotovo, {name}!
             </h3>
             <p className="text-sm mb-6" style={{ color: "oklch(0.65 0.01 65)" }}>
-              Tvůj personalizovaný plán ti pošleme na <strong style={{ color: "#D4AF37" }}>{email}</strong> do 24 hodin.
+              Poptávka byla přijata. Na <strong style={{ color: "#D4AF37" }}>{email}</strong> se ozveme ohledně dalšího postupu.
             </p>
             <div
               className="p-4 rounded-xl text-left"
               style={{ background: "oklch(0.12 0.005 285)", border: "1px solid rgba(212,175,55,0.15)" }}
             >
-              <p className="text-xs mb-1" style={{ color: "oklch(0.55 0.01 65)" }}>CO TĚ ČEKÁ V PLÁNU</p>
+              <p className="text-xs mb-1" style={{ color: "oklch(0.55 0.01 65)" }}>CO BUDE NÁSLEDOVAT</p>
               {[
-                "Konkrétní kroky pro tvůj typ tvůrce",
-                "Top 3 affiliate příležitosti pro tvou niche",
-                "Email funnel šablona (copy-paste)",
-                "Hormozi Value Ladder pro tvůj byznys",
+                "Prověříme možnosti monetizace",
+                "Domluvíme konkrétní rozsah a cenu předem",
+                "Odesláním formuláře neprobíhá žádná platba",
               ].map((item) => (
                 <div key={item} className="flex items-center gap-2 mt-2">
                   <span style={{ color: "#D4AF37", fontSize: "10px" }}>✦</span>
@@ -112,7 +129,7 @@ export default function LeadCapture({ isOpen, onClose, results, onSubmit }: Lead
               <div className="flex items-center gap-2 mb-3">
                 <Zap size={16} style={{ color: "#D4AF37" }} />
                 <span className="text-xs font-medium tracking-widest uppercase" style={{ color: "#D4AF37" }}>
-                  Bezplatný plán
+                  Poptávka bez závazku
                 </span>
               </div>
               <h3
@@ -120,11 +137,11 @@ export default function LeadCapture({ isOpen, onClose, results, onSubmit }: Lead
                 style={{ fontFamily: "'Space Grotesk', sans-serif", color: "oklch(0.97 0.003 65)" }}
               >
                 Získej svůj personalizovaný<br />
-                <span style={{ color: "#D4AF37" }}>monetizační plán</span>
+                <span style={{ color: "#D4AF37" }}>{offer === "mini-audit" ? "Mini audit · 1 290 Kč" : offer === "revenue-sprint" ? "Revenue Audit Sprint · 9 900 Kč" : "monetizační konzultaci"}</span>
               </h3>
               {results && (
                 <p className="text-sm" style={{ color: "oklch(0.65 0.01 65)" }}>
-                  Ukážeme ti, jak dosáhnout potenciálu{" "}
+                  Orientační modelový scénář:{" "}
                   <strong style={{ color: "#D4AF37" }}>{formatCZK(results.monthlyPotential)}/měsíc</strong>
                 </p>
               )}
@@ -193,9 +210,14 @@ export default function LeadCapture({ isOpen, onClose, results, onSubmit }: Lead
                 </div>
               </div>
 
+              <label className="flex items-start gap-2 text-xs leading-relaxed" style={{ color: "oklch(0.65 0.01 65)" }}>
+                <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} className="mt-0.5" />
+                <span>Souhlasím se zpracováním údajů za účelem vyřízení poptávky. <a href="https://optimateo.com/ochrana-osobnich-udaju" target="_blank" rel="noreferrer" className="underline" style={{ color: "#D4AF37" }}>Ochrana osobních údajů</a>.</span>
+              </label>
+              {error && <p role="alert" className="text-sm" style={{ color: "#f87171" }}>{error}</p>}
               <button
                 onClick={handleSubmit}
-                disabled={!name || !email || !challenge}
+                disabled={!name.trim() || !email.trim() || !challenge || !consent || sending}
                 className="w-full py-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                 style={{
                   background: "linear-gradient(135deg, #D4AF37, #8B6914)",
@@ -204,12 +226,12 @@ export default function LeadCapture({ isOpen, onClose, results, onSubmit }: Lead
                   boxShadow: name && email && challenge ? "0 8px 24px rgba(212,175,55,0.3)" : "none",
                 }}
               >
-                Získat bezplatný plán
+                {sending ? "Odesílám…" : "Odeslat nezávaznou poptávku"}
                 <ArrowRight size={16} />
               </button>
 
               <p className="text-center text-xs" style={{ color: "oklch(0.45 0.008 65)" }}>
-                Žádný spam. Jen konkrétní kroky. Odhlásit se lze kdykoliv.
+                Kontaktujeme tě pouze k této poptávce. Není to platba ani přihlášení k newsletteru.
               </p>
             </div>
           </div>
