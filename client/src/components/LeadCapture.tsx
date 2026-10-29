@@ -1,7 +1,7 @@
 // Lead Capture Modal — Hormozi Value First approach
 // Triggered after user sees results (high intent moment)
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { X, ArrowRight, CheckCircle, Zap } from "lucide-react";
 import type { CalculatorResults } from "@/hooks/useCalculator";
 import { formatCZK } from "@/hooks/useCalculator";
@@ -24,7 +24,6 @@ const CHALLENGES = [
 ];
 
 export default function LeadCapture({ isOpen, onClose, results, onSubmit, offer }: LeadCaptureProps) {
-  const [step, setStep] = useState(1);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [challenge, setChallenge] = useState("");
@@ -32,6 +31,13 @@ export default function LeadCapture({ isOpen, onClose, results, onSubmit, offer 
   const [consent, setConsent] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (isOpen) {
+      setSubmitted(false);
+      setError("");
+    }
+  }, [isOpen, offer]);
 
   if (!isOpen) return null;
 
