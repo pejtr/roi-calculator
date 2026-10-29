@@ -71,6 +71,26 @@ export function ingestEndpoint(raw: string | undefined): string | null {
 }
 
 /** Never log names, email, lead payloads or project keys. */
+export function toIngestPayload(lead: ValidLead) {
+  return {
+          source: "creator-roi-calculator",
+          name: lead.name,
+          email: lead.email,
+          interest: lead.offer === "mini-audit" ? "Creator monetization mini audit — 1290 CZK (inquiry)" :
+                    lead.offer === "revenue-sprint" ? "Revenue Audit Sprint — 9900 CZK (inquiry)" :
+                    "Creator monetization consultation (inquiry)",
+          url: lead.pageUrl,
+          utm_source: lead.utmSource,
+          utm_medium: lead.utmMedium,
+          utm_campaign: lead.utmCampaign,
+          challenge: lead.biggestChallenge,
+          creatorType: lead.creatorType,
+          scenario: lead.scenario,
+          scenarioModel: "creator-roi-heuristic-v1",
+          consentAt: new Date().toISOString(),
+        };
+}
+
 export function registerLeadApi(app: Express) {
   app.post("/api/leads", async (req: Request, res: Response) => {
     res.setHeader("Cache-Control", "no-store");
@@ -90,23 +110,7 @@ export function registerLeadApi(app: Express) {
       const response = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json", "X-LEADOS-Key": key },
-        body: JSON.stringify({
-          source: "creator-roi-calculator",
-          name: lead.name,
-          email: lead.email,
-          interest: lead.offer === "mini-audit" ? "Creator monetization mini audit — 1290 CZK (inquiry)" :
-                    lead.offer === "revenue-sprint" ? "Revenue Audit Sprint — 9900 CZK (inquiry)" :
-                    "Creator monetization consultation (inquiry)",
-          url: lead.pageUrl,
-          utm_source: lead.utmSource,
-          utm_medium: lead.utmMedium,
-          utm_campaign: lead.utmCampaign,
-          challenge: lead.biggestChallenge,
-          creatorType: lead.creatorType,
-          scenario: lead.scenario,
-          scenarioModel: "creator-roi-heuristic-v1",
-          consentAt: new Date().toISOString(),
-        }),
+        body: JSON.stringify(toIngestPayload(lead)),
         signal: AbortSignal.timeout(8000),
       });
       const result: unknown = await response.json().catch(() => null);
