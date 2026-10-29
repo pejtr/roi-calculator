@@ -31,15 +31,27 @@ export function parseLead(body: unknown): ValidLead | null {
   const creatorType = data.creatorType;
   if (name.length < 2 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || !biggestChallenge) return null;
   if (!offers.includes(offer as typeof offers[number]) || !creatorTypes.includes(creatorType as typeof creatorTypes[number])) return null;
-  const raw = data.scenario && typeof data.scenario === "object" ? data.scenario as Record<string, unknown> : {};
+  const raw = data.scenario && typeof data.scenario === "object" && !Array.isArray(data.scenario) ? data.scenario as Record<string, unknown> : {};
   const followers = bounded(raw.followers, 0, 2_000_000);
   const engagementRate = bounded(raw.engagementRate, 0, 100);
   const currentMonthlyRevenue = bounded(raw.currentMonthlyRevenue, 0, 100_000_000);
   if (followers === null || engagementRate === null || currentMonthlyRevenue === null) return null;
+  const rawPageUrl = clean(data.pageUrl, 512);
+  let pageUrl = "";
+  if (rawPageUrl) {
+    try {
+      const parsed = new URL(rawPageUrl);
+      if (parsed.protocol !== "https:" && parsed.protocol !== "http:") return null;
+      if (parsed.username || parsed.password) return null;
+      parsed.search = ""; // Keep the campaign fields separately; avoid query-string PII.
+      parsed.hash = "";
+      pageUrl = parsed.toString();
+    } catch { return null; }
+  }
   return {
     name, email, biggestChallenge,
     offer: offer as ValidLead["offer"], creatorType: creatorType as ValidLead["creatorType"],
-    website: "", pageUrl: clean(data.pageUrl, 512),
+    website: "", pageUrl,
     utmSource: clean(data.utmSource, 128), utmMedium: clean(data.utmMedium, 128),
     utmCampaign: clean(data.utmCampaign, 128),
     scenario: { followers, engagementRate, currentMonthlyRevenue },
@@ -96,6 +108,9 @@ export function registerLeadApi(app: Express) {
     res.setHeader("Cache-Control", "no-store");
     if (!trustedOrigin(req.get("origin"), req.get("host"), process.env.ROI_ALLOWED_ORIGINS ?? "")) {
       return res.status(403).json({ ok: false, error: "Požadavek nebyl povolen." });
+    }
+    if (!req.is("application/json")) {
+      return res.status(415).json({ ok: false, error: "Očekáváme JSON požadavek." });
     }
     const lead = parseLead(req.body);
     if (!lead) return res.status(400).json({ ok: false, error: "Zkontrolujte povinné údaje a souhlas." });
