@@ -3,7 +3,7 @@
 Status: **source implementation only, not verified on production**. No checkout, guaranteed revenue or automatic email delivery is implied.
 
 ## Existing LEAD OS contract
-LEAD OS already implements `POST /api/leads/ingest` with the project key in the `X-LEADOS-Key` header, storing an external lead in `ingestedLeads`. This project relays `POST /api/leads` **server-side only**. The browser never sees the project key.
+LEAD OS already implements `POST /api/leads/ingest` with the project key in the `X-LEADOS-Key` header, storing an external lead in `ingestedLeads`. This project relays `POST /api/leads` **server-side only**. The browser never sees the project key. Two server implementations share the same validation and payload: Node/Express at `server/index.ts` or Cloudflare Pages Functions at `functions/api/leads.ts`. Do not run both in the same deployment.
 
 Configure server-side `LEADOS_BASE_URL` (HTTPS origin) and `LEADOS_PROJECT_API_KEY` (active connected-project key). Use `ROI_ALLOWED_ORIGINS` only for exact trusted preview origins. Do not place secrets in client code, public tracker scripts or documentation. No additional DB migration is required in ROI.
 
@@ -17,7 +17,7 @@ Data submitted after explicit consent: name, email, selected service/inquiry, cr
 5. Checkout and payment remain **not integrated**; do not count inquiries as sales.
 
 ## Local / preview test
-Run the Vite frontend with `pnpm dev` and Node API separately with `pnpm dev:server`. Vite proxies `/api` to localhost:3001. With unset LEAD OS credentials, valid submissions must show an honest 503 error. With configured credentials and a non-production test project, verify one consented submission end-to-end in LEAD OS inbox, including source and interest; verify invalid payload → 400 and mismatched Origin → 403. Run `pnpm check`, `pnpm test`, `pnpm build`. Test mobile layout, retries and anti-bot rate limits at the edge before production.
+For a Cloudflare Pages deployment, build output is `dist/public`, and the root `functions/` directory must be deployed alongside the Pages project. Bind `LEADOS_BASE_URL` and `LEADOS_PROJECT_API_KEY` only in the Pages server-side environment. Configure the local project according to the actual deployment, not assumptions.\n\nRun the Vite frontend with `pnpm dev` and Node API separately with `pnpm dev:server`. Vite proxies `/api` to localhost:3001. With unset LEAD OS credentials, valid submissions must show an honest 503 error. With configured credentials and a non-production test project, verify one consented submission end-to-end in LEAD OS inbox, including source and interest; verify invalid payload → 400 and mismatched Origin → 403. Run `pnpm check`, `pnpm test`, `pnpm build`. Test mobile layout, retries and anti-bot rate limits at the edge before production.
 
 ## Release gates
 - [ ] LEAD OS connection configured via private deployment secrets and active project
