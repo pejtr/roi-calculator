@@ -13,7 +13,7 @@ import {
   type CreatorType,
 } from "@/hooks/useCalculator";
 import { useCountUp } from "@/hooks/useCountUp";
-import ChatBot from "@/components/ChatBot";
+import { submitCreatorLead, type CreatorLead } from "@/lib/leads";
 import LeadCapture from "@/components/LeadCapture";
 import { toast } from "sonner";
 import {
@@ -24,7 +24,6 @@ import {
   Mail,
   ChevronDown,
   ArrowRight,
-  Star,
 } from "lucide-react";
 
 const CREATOR_TYPES: { value: CreatorType; label: string; icon: string; desc: string }[] = [
@@ -34,11 +33,6 @@ const CREATOR_TYPES: { value: CreatorType; label: string; icon: string; desc: st
   { value: "youtuber", label: "YouTuber", icon: "▶️", desc: "YouTube, Podcast" },
 ];
 
-const SOCIAL_PROOF = [
-  { name: "Martin K.", role: "Realitní makléř", result: "+87K Kč/měsíc", avatar: "MK" },
-  { name: "Tereza N.", role: "Life kouč", result: "+124K Kč/měsíc", avatar: "TN" },
-  { name: "Jakub P.", role: "YouTuber", result: "+56K Kč/měsíc", avatar: "JP" },
-];
 
 function GoldSlider({
   label,
@@ -141,12 +135,10 @@ export default function Home() {
 
   const [results, setResults] = useState<CalculatorResults | null>(null);
   const [showLeadCapture, setShowLeadCapture] = useState(false);
-  const [leadCaptured, setLeadCaptured] = useState(false);
-  const [hasInteracted, setHasInteracted] = useState(false);
+  const [selectedOffer, setSelectedOffer] = useState<CreatorLead["offer"]>("consultation");
 
   const updateInput = useCallback(<K extends keyof CalculatorInputs>(key: K, value: CalculatorInputs[K]) => {
     setInputs((prev) => ({ ...prev, [key]: value }));
-    setHasInteracted(true);
   }, []);
 
   useEffect(() => {
@@ -154,21 +146,24 @@ export default function Home() {
     setResults(r);
   }, [inputs]);
 
-  // Trigger lead capture after 45 seconds of interaction
-  useEffect(() => {
-    if (!hasInteracted || leadCaptured) return;
-    const timer = setTimeout(() => setShowLeadCapture(true), 45000);
-    return () => clearTimeout(timer);
-  }, [hasInteracted, leadCaptured]);
-
-  const handleLeadSubmit = (data: { name: string; email: string; biggestChallenge: string }) => {
-    setLeadCaptured(true);
-    setShowLeadCapture(false);
-    toast.success(`Plán odesíláme na ${data.email}!`, {
-      description: "Zkontroluj svůj inbox do 24 hodin.",
+  const handleLeadSubmit = async (data: { name: string; email: string; biggestChallenge: string }) => {
+    await submitCreatorLead({
+      ...data,
+      consent: true,
+      offer: selectedOffer,
+      creatorType: inputs.creatorType,
+      scenario: {
+        followers: inputs.followers,
+        engagementRate: inputs.engagementRate,
+        currentMonthlyRevenue: inputs.currentMonthlyRevenue,
+      },
     });
-    // In production: send to n8n webhook / email service
-    console.log("LEAD CAPTURED:", data, results);
+    toast.success("Poptávka byla přijata do LEAD OS.");
+  };
+
+  const openInquiry = (offer: CreatorLead["offer"]) => {
+    setSelectedOffer(offer);
+    setShowLeadCapture(true);
   };
 
   const monthly = results?.monthlyPotential ?? 0;
@@ -200,42 +195,18 @@ export default function Home() {
               className="text-4xl md:text-6xl font-bold leading-tight mb-4"
               style={{ fontFamily: "'Space Grotesk', sans-serif", color: "oklch(0.97 0.003 65)" }}
             >
-              Kolik peněz<br />
-              <span style={{ color: "#D4AF37" }}>nechávás na stole?</span>
+              Kolik může vydělat<br />
+              <span style={{ color: "#D4AF37" }}>tvůj obsah?</span>
             </h1>
             <p className="text-lg mb-8" style={{ color: "oklch(0.65 0.01 65)", maxWidth: "480px" }}>
               Kalkulačka pro realitáky, influencery, edukátory a YouTubery.
               Zjisti svůj monetizační potenciál za 60 sekund.
             </p>
 
-            {/* Social proof mini */}
-            <div className="flex items-center gap-4">
-              <div className="flex -space-x-2">
-                {SOCIAL_PROOF.map((p) => (
-                  <div
-                    key={p.name}
-                    className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2"
-                    style={{
-                      background: "linear-gradient(135deg, #D4AF37, #8B6914)",
-                      color: "#0A0A0A",
-                      borderColor: "#0A0A0A",
-                    }}
-                  >
-                    {p.avatar}
-                  </div>
-                ))}
-              </div>
-              <div>
-                <div className="flex items-center gap-1 mb-0.5">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} size={10} fill="#D4AF37" style={{ color: "#D4AF37" }} />
-                  ))}
-                </div>
-                <p className="text-xs" style={{ color: "oklch(0.55 0.01 65)" }}>
-                  Přes <strong style={{ color: "#D4AF37" }}>1,200+ tvůrců</strong> zjistilo svůj potenciál
-                </p>
-              </div>
-            </div>
+            <p className="text-sm leading-relaxed mt-4 max-w-xl" style={{ color: "oklch(0.62 0.01 65)" }}>
+              Výsledky jsou orientační modelové scénáře, nikoli predikce budoucích příjmů.
+              Skutečný výsledek záleží na publiku, nabídce a realizaci.
+            </p>
           </div>
         </div>
       </section>
@@ -305,7 +276,7 @@ export default function Home() {
                 step={0.1}
                 onChange={(v) => updateInput("engagementRate", v)}
                 format={(v) => `${v.toFixed(1)} %`}
-                hint="Průměr v oboru: 3 %. Nad 5 % = výborně."
+                hint="Modelový referenční bod: 3 %. Skutečné hodnoty se liší podle platformy."
               />
 
               <GoldSlider
@@ -339,7 +310,7 @@ export default function Home() {
                       Máš email list?
                     </p>
                     <p className="text-xs mt-0.5" style={{ color: "oklch(0.45 0.008 65)" }}>
-                      Email list = 3× vyšší konverze
+                      Vlastní publikum může snížit závislost na algoritmech
                     </p>
                   </div>
                   <button
@@ -381,19 +352,19 @@ export default function Home() {
             <div className="grid grid-cols-3 gap-3">
               {[
                 {
-                  label: "Měsíční potenciál",
+                  label: "Modelově / měsíc",
                   value: monthly,
                   icon: <TrendingUp size={16} />,
                   big: true,
                 },
                 {
-                  label: "Roční potenciál",
+                  label: "Modelově / rok",
                   value: yearly,
                   icon: <BarChart3 size={16} />,
                   big: false,
                 },
                 {
-                  label: "Revenue Gap",
+                  label: "Modelová mezera",
                   value: gap,
                   icon: <Zap size={16} />,
                   big: false,
@@ -464,7 +435,7 @@ export default function Home() {
                   {results?.topOpportunity ?? "—"}
                 </p>
                 <button
-                  onClick={() => setShowLeadCapture(true)}
+                  onClick={() => openInquiry("consultation")}
                   className="mt-3 flex items-center gap-1 text-xs font-medium transition-all hover:gap-2"
                   style={{ color: "oklch(0.65 0.01 65)" }}
                 >
@@ -517,7 +488,7 @@ export default function Home() {
               }}
             >
               <p className="text-xs font-medium tracking-wide uppercase mb-4" style={{ color: "oklch(0.55 0.01 65)" }}>
-                Srovnání s průměrem v oboru
+                Ilustrační referenční hodnoty
               </p>
               <div className="space-y-4">
                 {results?.benchmarks.map((b) => (
@@ -525,7 +496,7 @@ export default function Home() {
                     <div className="flex items-center justify-between mb-1.5">
                       <span className="text-xs" style={{ color: "oklch(0.65 0.01 65)" }}>{b.label}</span>
                       <div className="flex items-center gap-3 text-xs">
-                        <span style={{ color: "oklch(0.55 0.01 65)" }}>Průměr: {b.average}{b.unit}</span>
+                        <span style={{ color: "oklch(0.55 0.01 65)" }}>Model: {b.average}{b.unit}</span>
                         <span
                           className="font-bold"
                           style={{
@@ -579,7 +550,7 @@ export default function Home() {
               <div className="grid grid-cols-4 gap-3 mb-3">
                 {[
                   { label: "Dream Outcome", value: formatCZK(results?.hormozi.dreamOutcome ?? 0), sub: "ročně" },
-                  { label: "Likelihood", value: `${results?.hormozi.likelihood ?? 0}%`, sub: "pravděpodobnost" },
+                  { label: "Likelihood", value: `${results?.hormozi.likelihood ?? 0}%`, sub: "modelové skóre" },
                   { label: "Time Delay", value: `${results?.hormozi.timeDelay?.toFixed(1) ?? 0}`, sub: "měsíce" },
                   { label: "Effort", value: `${results?.hormozi.effort ?? 0}/5`, sub: "náročnost" },
                 ].map((item) => (
@@ -609,7 +580,7 @@ export default function Home() {
 
             {/* CTA */}
             <button
-              onClick={() => setShowLeadCapture(true)}
+              onClick={() => openInquiry("consultation")}
               className="w-full py-4 rounded-2xl font-bold text-base flex items-center justify-center gap-3 transition-all group"
               style={{
                 background: "linear-gradient(135deg, #D4AF37, #8B6914)",
@@ -619,61 +590,40 @@ export default function Home() {
               }}
             >
               <Mail size={18} />
-              Získat bezplatný monetizační plán
+              Poptat monetizační konzultaci
               <ArrowRight size={18} className="transition-transform group-hover:translate-x-1" />
             </button>
           </div>
         </div>
       </section>
 
-      {/* SOCIAL PROOF SECTION */}
-      <section className="container py-12">
-        <div className="gold-line mb-12" />
+      {/* ROI offers — inquiries only, not payment transactions */}
+      <section className="container py-12" id="audity">
+        <div className="gold-line mb-10" />
         <div className="text-center mb-8">
-          <p className="text-xs font-medium tracking-widest uppercase mb-2" style={{ color: "#D4AF37" }}>
-            Výsledky tvůrců
+          <p className="text-xs font-medium tracking-widest uppercase mb-2" style={{ color: "#D4AF37" }}>OPTIMATEO · ROI Intelligence</p>
+          <h2 className="text-3xl font-bold mb-3" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Z modelu k reálné obchodní akci</h2>
+          <p className="text-sm max-w-xl mx-auto" style={{ color: "oklch(0.65 0.01 65)" }}>
+            Kalkulačka je zdarma. Pokud chceš individuální doporučení, vyber si audit a nezávazně se poptej. Platba neprobíhá na této stránce.
           </p>
-          <h2
-            className="text-3xl font-bold"
-            style={{ fontFamily: "'Space Grotesk', sans-serif", color: "oklch(0.97 0.003 65)" }}
-          >
-            Reálné čísla. Žádný bullshit.
-          </h2>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {SOCIAL_PROOF.map((p) => (
-            <div
-              key={p.name}
-              className="p-6 rounded-2xl"
-              style={{
-                background: "oklch(0.11 0.005 285)",
-                border: "1px solid rgba(212,175,55,0.1)",
-              }}
-            >
-              <div className="flex items-center gap-3 mb-4">
-                <div
-                  className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm"
-                  style={{ background: "linear-gradient(135deg, #D4AF37, #8B6914)", color: "#0A0A0A" }}
-                >
-                  {p.avatar}
-                </div>
-                <div>
-                  <p className="text-sm font-semibold" style={{ fontFamily: "'Space Grotesk', sans-serif", color: "oklch(0.9 0.005 65)" }}>
-                    {p.name}
-                  </p>
-                  <p className="text-xs" style={{ color: "oklch(0.55 0.01 65)" }}>{p.role}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-1 mb-2">
-                {[...Array(5)].map((_, i) => <Star key={i} size={12} fill="#D4AF37" style={{ color: "#D4AF37" }} />)}
-              </div>
-              <p className="text-2xl font-bold gold-number mb-1">{p.result}</p>
-              <p className="text-xs" style={{ color: "oklch(0.55 0.01 65)" }}>
-                nový příjem po implementaci plánu
-              </p>
-            </div>
-          ))}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-4xl mx-auto">
+          <div className="rounded-2xl p-6" style={{ background: "oklch(0.11 0.005 285)", border: "1px solid rgba(212,175,55,.2)" }}>
+            <p className="text-xs uppercase tracking-wide mb-2" style={{ color: "#D4AF37" }}>Start</p>
+            <h3 className="text-xl font-bold mb-2">Creator Mini Audit</h3>
+            <p className="text-3xl font-bold mb-4 gold-number">1 290 Kč</p>
+            <p className="text-sm mb-6" style={{ color: "oklch(0.65 0.01 65)" }}>Stručná analýza monetizace, hlavní rizika a 3 konkrétní doporučené kroky.</p>
+            <button onClick={() => openInquiry("mini-audit")} className="w-full rounded-lg py-3 font-semibold" style={{ background: "#D4AF37", color: "#0A0A0A" }}>Poptat mini audit →</button>
+          </div>
+          <div className="rounded-2xl p-6" style={{ background: "linear-gradient(135deg, rgba(212,175,55,.12), rgba(10,10,10,.95))", border: "1px solid rgba(212,175,55,.35)" }}>
+            <p className="text-xs uppercase tracking-wide mb-2" style={{ color: "#D4AF37" }}>Rozšířená spolupráce</p>
+            <h3 className="text-xl font-bold mb-2">Revenue Audit Sprint</h3>
+            <p className="text-3xl font-bold mb-4 gold-number">9 900 Kč</p>
+            <p className="text-sm mb-6" style={{ color: "oklch(0.65 0.01 65)" }}>Individuální rozbor nabídky, konverzního funnelu a prioritizovaný plán zlepšení.</p>
+            <button onClick={() => openInquiry("revenue-sprint")} className="w-full rounded-lg py-3 font-semibold" style={{ background: "#D4AF37", color: "#0A0A0A" }}>Poptat audit sprint →</button>
+          </div>
         </div>
+        <p className="text-xs text-center mt-5" style={{ color: "oklch(0.5 0.01 65)" }}>Uvedené ceny jsou orientační nabídka pro vymezený rozsah; spolupráce vzniká až po potvrzení zadání.</p>
       </section>
 
       {/* DASHBOARD VISUAL SECTION */}
@@ -700,7 +650,7 @@ export default function Home() {
                 Přestaň monetizovat náhodně. Začni systematicky.
               </p>
               <button
-                onClick={() => setShowLeadCapture(true)}
+                onClick={() => openInquiry("consultation")}
                 className="px-8 py-3 rounded-xl font-bold text-sm transition-all"
                 style={{
                   background: "linear-gradient(135deg, #D4AF37, #8B6914)",
@@ -709,7 +659,7 @@ export default function Home() {
                   boxShadow: "0 8px 24px rgba(212,175,55,0.3)",
                 }}
               >
-                Chci bezplatný plán →
+                Poptat konzultaci →
               </button>
             </div>
           </div>
@@ -740,21 +690,11 @@ export default function Home() {
       </footer>
 
       {/* Components */}
-      <ChatBot
-        results={results}
-        creatorType={inputs.creatorType}
-        onLeadCapture={(email, name) => {
-          if (!leadCaptured) {
-            setLeadCaptured(true);
-            toast.success(`Lead zachycen: ${email}`);
-          }
-        }}
-      />
-
       <LeadCapture
         isOpen={showLeadCapture}
         onClose={() => setShowLeadCapture(false)}
         results={results}
+        offer={selectedOffer}
         onSubmit={handleLeadSubmit}
       />
     </div>
