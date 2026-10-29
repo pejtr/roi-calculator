@@ -550,7 +550,7 @@ export default function Home() {
               <div className="grid grid-cols-4 gap-3 mb-3">
                 {[
                   { label: "Dream Outcome", value: formatCZK(results?.hormozi.dreamOutcome ?? 0), sub: "ročně" },
-                  { label: "Likelihood", value: `${results?.hormozi.likelihood ?? 0}%`, sub: "modelové skóre" },
+                  { label: "Likelihood", value: `${results?.hormozi.likelihood ?? 0}/100`, sub: "ilustrační index" },
                   { label: "Time Delay", value: `${results?.hormozi.timeDelay?.toFixed(1) ?? 0}`, sub: "měsíce" },
                   { label: "Effort", value: `${results?.hormozi.effort ?? 0}/5`, sub: "náročnost" },
                 ].map((item) => (
@@ -680,7 +680,7 @@ export default function Home() {
               Creator ROI Calculator
             </p>
             <p className="text-xs" style={{ color: "oklch(0.45 0.008 65)" }}>
-              Inspirováno Hormozi Value Equation
+              Ilustrační scénář · skutečné tržby nejsou garantované
             </p>
           </div>
           <p className="text-xs" style={{ color: "oklch(0.35 0.005 65)" }}>
