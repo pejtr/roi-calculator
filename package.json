@@ -11,7 +11,9 @@
     "check": "tsc --noEmit",
     "format": "prettier --write .",
     "dev:server": "tsx watch server/index.ts",
-    "test": "vitest run"
+    "test": "vitest run",
+    "smoke:api": "node scripts/roi-smoke.mjs",
+    "verify:release": "pnpm check && pnpm test && pnpm build && pnpm smoke:api"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
