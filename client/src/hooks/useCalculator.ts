@@ -51,7 +51,7 @@ const CREATOR_MULTIPLIERS: Record<CreatorType, {
     conversionBase: 2.5,
     label: "Influencer",
     opportunities: [
-      "Affiliate marketing s provizí 20–40 %",
+      "Affiliate marketing s transparentními provizemi",
       "Sponzorované posty (CPM model)",
       "Vlastní digitální produkty",
       "Membership komunita",
@@ -96,16 +96,18 @@ export function calculate(inputs: CalculatorInputs): CalculatorResults {
   const m = CREATOR_MULTIPLIERS[inputs.creatorType];
   const engMult = Math.min(inputs.engagementRate / 3, 2.5); // 3% = baseline
   const freqMult = Math.min(inputs.contentFrequency / 3, 1.8);
-  const emailMult = inputs.hasEmailList ? 1 + (inputs.emailListSize / inputs.followers) * 0.5 : 1;
+  const safeFollowers = Math.max(1, Number.isFinite(inputs.followers) ? inputs.followers : 0);
+  const safeEmailSize = Math.max(0, Number.isFinite(inputs.emailListSize) ? inputs.emailListSize : 0);
+  const emailMult = inputs.hasEmailList ? 1 + Math.min(safeEmailSize / safeFollowers, 5) * 0.5 : 1;
 
   const monthlyPotential = Math.round(
-    inputs.followers * m.revenuePerFollower * engMult * freqMult * emailMult
+    Math.max(0, inputs.followers) * m.revenuePerFollower * Math.max(0, engMult) * Math.max(0, freqMult) * emailMult
   );
 
   const yearlyPotential = monthlyPotential * 12;
   const revenueGap = Math.max(0, monthlyPotential - inputs.currentMonthlyRevenue);
 
-  const conversionScore = Math.min(
+  const conversionScore = Math.max(0, Math.min(
     100,
     Math.round(
       (inputs.engagementRate / 5) * 30 +
@@ -114,7 +116,7 @@ export function calculate(inputs: CalculatorInputs): CalculatorResults {
       (inputs.currentMonthlyRevenue > 0 ? 15 : 0) +
       10
     )
-  );
+  ));
 
   // Revenue breakdown
   const adRevenue = Math.round(monthlyPotential * 0.25);
@@ -138,7 +140,7 @@ export function calculate(inputs: CalculatorInputs): CalculatorResults {
     },
     {
       label: "Příjem / 1000 followerů",
-      yours: Math.round((inputs.currentMonthlyRevenue / inputs.followers) * 1000),
+      yours: Math.round((inputs.currentMonthlyRevenue / safeFollowers) * 1000),
       average: Math.round(m.revenuePerFollower * 1000),
       unit: " Kč",
     },
@@ -152,7 +154,7 @@ export function calculate(inputs: CalculatorInputs): CalculatorResults {
 
   // Hormozi Value Equation
   const dreamOutcome = yearlyPotential;
-  const likelihood = Math.round(m.conversionBase * engMult * 20);
+  const likelihood = Math.max(0, Math.min(100, Math.round(m.conversionBase * Math.max(0, engMult) * 20))); // heuristic score; not empirical probability
   const timeDelay = Math.max(1, 6 - inputs.contentFrequency * 0.5);
   const effort = Math.max(1, 5 - (inputs.hasEmailList ? 1 : 0) - (inputs.engagementRate > 3 ? 1 : 0));
   const valueScore = Math.round((dreamOutcome / 10000 * likelihood) / (timeDelay * effort));
