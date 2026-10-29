@@ -206,7 +206,7 @@ export default function LeadCapture({ isOpen, onClose, results, onSubmit, offer 
 
               <label className="flex items-start gap-2 text-xs leading-relaxed" style={{ color: "oklch(0.65 0.01 65)" }}>
                 <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} className="mt-0.5" />
-                <span>Souhlasím se zpracováním údajů za účelem vyřízení poptávky. <a href="https://optimateo.com/datenschutz" target="_blank" rel="noreferrer" className="underline" style={{ color: "#D4AF37" }}>Ochrana osobních údajů</a>.</span>
+                <span>Souhlasím se zpracováním údajů za účelem vyřízení poptávky. <a href="https://optimateo.com/ochrana-osobnich-udaju" target="_blank" rel="noreferrer" className="underline" style={{ color: "#D4AF37" }}>Ochrana osobních údajů</a>.</span>
               </label>
               {error && <p role="alert" className="text-sm" style={{ color: "#f87171" }}>{error}</p>}
               <button
