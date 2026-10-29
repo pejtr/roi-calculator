@@ -94,8 +94,8 @@ const CREATOR_MULTIPLIERS: Record<CreatorType, {
 
 export function calculate(inputs: CalculatorInputs): CalculatorResults {
   const m = CREATOR_MULTIPLIERS[inputs.creatorType];
-  const engMult = Math.min(inputs.engagementRate / 3, 2.5); // 3% = baseline
-  const freqMult = Math.min(inputs.contentFrequency / 3, 1.8);
+  const engMult = Math.min(Math.max(0, inputs.engagementRate / 3), 2.5); // 3% = baseline
+  const freqMult = Math.min(Math.max(0, inputs.contentFrequency / 3), 1.8);
   const safeFollowers = Math.max(1, Number.isFinite(inputs.followers) ? inputs.followers : 0);
   const safeEmailSize = Math.max(0, Number.isFinite(inputs.emailListSize) ? inputs.emailListSize : 0);
   const emailMult = inputs.hasEmailList ? 1 + Math.min(safeEmailSize / safeFollowers, 5) * 0.5 : 1;
